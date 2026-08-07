@@ -336,72 +336,94 @@ fun KuhooApp(
 
 @Composable
 fun HomeScreenContent(onTrackSelect: (TrackInfo) -> Unit) {
-    val trending = listOf(
-        TrackInfo("dQw4w9WgXcQ", "Never Gonna Give You Up", "Rick Astley", "Whenever You Need Somebody", 213000L),
-        TrackInfo("3JZ_D3ELwOQ", "Radioactive", "Imagine Dragons", "Night Visions", 187000L),
-        TrackInfo("fJ9rUzIMcZQ", "Bohemian Rhapsody", "Queen", "A Night at the Opera", 354000L)
-    )
+    val innerTubeService: InnerTubeService = koinInject()
+    var homeSections by remember { mutableStateOf<List<com.kuhoo.innertube.HomeSection>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
 
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text(
-                        "Welcome to the Kuhoo Music Platform",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Ad-Free Cross-Platform Streaming & Offline Caching",
-                        fontSize = 15.sp,
-                        color = Color(0xFF6366F1)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        "Lead Developer: Sai Dheeraj Nalkari (nsd999) • Contact: nalkarisaidheeraj@gmail.com",
-                        fontSize = 12.sp,
-                        color = Color.LightGray
-                    )
+    LaunchedEffect(Unit) {
+        isLoading = true
+        homeSections = innerTubeService.getHomeSections()
+        isLoading = false
+    }
+
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = Color(0xFF6366F1))
+        }
+    } else {
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(24.dp)) {
+                        Text(
+                            "Welcome to the Kuhoo Music Platform",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Ad-Free Cross-Platform Streaming & Offline Caching",
+                            fontSize = 15.sp,
+                            color = Color(0xFF6366F1)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "Lead Developer: Sai Dheeraj Nalkari (nsd999) • Contact: nalkarisaidheeraj@gmail.com",
+                            fontSize = 12.sp,
+                            color = Color.LightGray
+                        )
+                    }
                 }
             }
 
-            Text("Featured & Trending", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Spacer(Modifier.height(16.dp))
-        }
+            if (homeSections.isEmpty()) {
+                item {
+                    Text("No recommendations available. Try searching for a song!", fontSize = 16.sp, color = Color.Gray)
+                }
+            }
 
-        items(trending) { track ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-                    .clickable { onTrackSelect(track) },
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
+            homeSections.forEach { section ->
+                item {
+                    Spacer(Modifier.height(16.dp))
+                    Text(section.title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                items(section.items.take(10)) { track ->
+                    Card(
                         modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFEC4899)),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable { onTrackSelect(track) },
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
                     ) {
-                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = Color.White)
-                    }
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text(track.title, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text(track.artist, color = Color.Gray, fontSize = 14.sp)
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFEC4899)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.MusicNote, contentDescription = null, tint = Color.White)
+                            }
+                            Spacer(Modifier.width(16.dp))
+                            Column {
+                                Text(track.title, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
+                                Text(track.artist, color = Color.Gray, fontSize = 14.sp, maxLines = 1)
+                            }
+                        }
                     }
                 }
             }
