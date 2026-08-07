@@ -35,6 +35,8 @@ kotlin {
 
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
+
+            implementation(project(":innertube"))
         }
 
         val desktopMain by getting {

@@ -1,37 +1,41 @@
 plugins {
-    id("com.android.library")
     alias(libs.plugins.kotlin.serialization)
-}
-
-android {
-    namespace = "com.music.innertube"
-    compileSdk = 37
-
-    defaultConfig {
-        minSdk = 26
-    }
-
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
+    kotlin("multiplatform")
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvm("desktop")
+
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+    }
+
+    sourceSets {
+        commonMain {
+            kotlin.srcDir("src/main/kotlin")
+            dependencies {
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.json)
+                implementation(libs.ktor.client.encoding)
+                implementation(libs.brotli)
+                implementation(libs.newpipeextractor)
+                implementation(libs.rhino)
+            }
+        }
+
+        val desktopMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.cio)
+            }
+        }
+
+        val wasmJsMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.js)
+            }
+        }
+    }
 }
 
-dependencies {
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.okhttp)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.serialization.json)
-    implementation(libs.ktor.client.encoding)
-    implementation(libs.brotli)
-    implementation(libs.newpipeextractor)
-    implementation(libs.rhino)
-    testImplementation(libs.junit)
-
-    coreLibraryDesugaring(libs.desugaring)
-}
