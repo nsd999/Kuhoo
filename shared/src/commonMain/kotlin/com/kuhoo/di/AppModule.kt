@@ -10,6 +10,6 @@ import org.koin.dsl.module
 val appModule = module {
     single<AudioPlayer> { createAudioPlayer() }
     single { InnerTubeService() }
-    single { DatabaseDriverFactory() }
+    single<DatabaseDriverFactory> { DatabaseDriverFactory() }
     single { KuhooDatabase(get<DatabaseDriverFactory>().createDriver()) }
 }
