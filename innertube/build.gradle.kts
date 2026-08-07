@@ -28,6 +28,7 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 implementation(libs.ktor.client.cio)
+                implementation("com.squareup.okhttp3:okhttp:4.12.0")
             }
         }
 
