@@ -1,5 +1,6 @@
 package com.kuhoo.desktop
 
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -21,7 +22,8 @@ fun main() {
         Window(
             onCloseRequest = ::exitApplication,
             title = "Kuhoo Music",
-            state = rememberWindowState(width = 1280.dp, height = 800.dp)
+            state = rememberWindowState(width = 1280.dp, height = 800.dp),
+            icon = painterResource("kuhoo_icon.png")
         ) {
             KuhooApp()
         }

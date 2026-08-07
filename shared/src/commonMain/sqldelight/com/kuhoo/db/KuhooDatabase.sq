@@ -58,6 +58,16 @@ CREATE TABLE PlayStat (
     lastPlayed INTEGER NOT NULL
 );
 
+CREATE TABLE RecentlyPlayed (
+    songId TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    artistName TEXT NOT NULL,
+    albumName TEXT,
+    durationMs INTEGER NOT NULL DEFAULT 0,
+    thumbnailUrl TEXT,
+    lastPlayedAt INTEGER NOT NULL
+);
+
 -- Queries for Song
 getAllSongs:
 SELECT * FROM Song ORDER BY addedAt DESC;
@@ -94,6 +104,18 @@ INSERT OR REPLACE INTO Playlist (id, name, createdAt, songCount) VALUES (?, ?, ?
 deletePlaylist:
 DELETE FROM Playlist WHERE id = ?;
 
+getPlaylistSongs:
+SELECT s.* FROM Song s
+INNER JOIN PlaylistSong ps ON s.id = ps.songId
+WHERE ps.playlistId = ?
+ORDER BY ps.position;
+
+insertPlaylistSong:
+INSERT OR REPLACE INTO PlaylistSong (playlistId, songId, position) VALUES (?, ?, ?);
+
+removePlaylistSong:
+DELETE FROM PlaylistSong WHERE playlistId = ? AND songId = ?;
+
 -- Queries for Search History
 getRecentSearches:
 SELECT * FROM SearchHistory ORDER BY timestamp DESC LIMIT 10;
@@ -111,3 +133,24 @@ SELECT * FROM PlayStat WHERE songId = ?;
 incrementPlayCount:
 INSERT INTO PlayStat (songId, playCount, lastPlayed) VALUES (?, 1, ?)
 ON CONFLICT(songId) DO UPDATE SET playCount = playCount + 1, lastPlayed = excluded.lastPlayed;
+
+getMostPlayedSongIds:
+SELECT songId FROM PlayStat ORDER BY playCount DESC LIMIT 50;
+
+getTopArtists:
+SELECT s.artistName, SUM(ps.playCount) AS totalPlays
+FROM Song s INNER JOIN PlayStat ps ON s.id = ps.songId
+GROUP BY s.artistName
+ORDER BY totalPlays DESC
+LIMIT 10;
+
+-- Queries for Recently Played
+insertRecentlyPlayed:
+INSERT OR REPLACE INTO RecentlyPlayed (songId, title, artistName, albumName, durationMs, thumbnailUrl, lastPlayedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+getRecentlyPlayed:
+SELECT * FROM RecentlyPlayed ORDER BY lastPlayedAt DESC LIMIT 50;
+
+clearRecentlyPlayed:
+DELETE FROM RecentlyPlayed;

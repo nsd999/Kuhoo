@@ -11,6 +11,10 @@ enum class PlaybackState {
     ERROR
 }
 
+enum class ItemType {
+    SONG, ALBUM, PLAYLIST, ARTIST
+}
+
 data class TrackInfo(
     val id: String,
     val title: String,
@@ -18,7 +22,8 @@ data class TrackInfo(
     val album: String? = null,
     val durationMs: Long = 0L,
     val thumbnailUrl: String? = null,
-    val streamUrl: String? = null
+    val streamUrl: String? = null,
+    val itemType: ItemType = ItemType.SONG
 )
 
 interface AudioPlayer {

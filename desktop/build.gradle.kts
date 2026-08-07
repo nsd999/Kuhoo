@@ -25,6 +25,7 @@ compose.desktop {
             windows {
                 menuGroup = "Kuhoo Music"
                 upgradeUuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                iconFile.set(project.file("src/main/resources/kuhoo_icon.png"))
             }
         }
     }
