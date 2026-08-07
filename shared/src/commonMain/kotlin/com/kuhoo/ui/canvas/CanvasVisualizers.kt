@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.Color
 import kotlin.math.sin
 
 @Composable
-ComposableViviMusicCanvas(
+fun ComposableViviMusicCanvas(
     modifier: Modifier = Modifier.fillMaxSize(),
     primaryColor: Color = Color(0xFF6366F1),
     secondaryColor: Color = Color(0xFFEC4899),

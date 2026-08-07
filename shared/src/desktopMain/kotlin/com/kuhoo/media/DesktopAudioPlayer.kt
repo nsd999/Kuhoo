@@ -81,7 +81,7 @@ class DesktopAudioPlayer : AudioPlayer {
                 _playbackState.value = PlaybackState.PLAYING
 
                 val buffer = ByteArray(4096)
-                var bytesRead: Int
+                var bytesRead = 0
 
                 val startTime = System.currentTimeMillis()
                 while (playJob?.isActive == true && din.read(buffer, 0, buffer.size).also { bytesRead = it } != -1) {
