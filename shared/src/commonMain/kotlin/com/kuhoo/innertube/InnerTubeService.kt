@@ -117,25 +117,41 @@ class InnerTubeService {
 
     suspend fun getStreamUrl(trackId: String): String {
         // Use Piped API for stream extraction (more reliable for desktop)
+        // Note: Piped only works with video IDs (11 chars), not album/playlist IDs
+        if (trackId.length != 11) return ""
+        
         return try {
-            val jsonRes: JsonObject = pipedClient.get("https://pipedapi.kavin.rocks/streams/$trackId").body()
-            val audioStreams = jsonRes["audioStreams"]?.jsonArray
-            // Pick highest quality audio stream
-            val bestStream = audioStreams
-                ?.mapNotNull { it.jsonObject }
-                ?.filter { it["mimeType"]?.jsonPrimitive?.content?.contains("audio") == true }
-                ?.maxByOrNull { it["bitrate"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0 }
-            bestStream?.get("url")?.jsonPrimitive?.content
-                ?: audioStreams?.firstOrNull()?.jsonObject?.get("url")?.jsonPrimitive?.content
-                ?: ""
+            val response = pipedClient.get("https://pipedapi.kavin.rocks/streams/$trackId")
+            if (response.status.value in 200..299) {
+                val jsonRes: JsonObject = response.body()
+                val audioStreams = jsonRes["audioStreams"]?.jsonArray
+                // Pick highest quality audio stream
+                val bestStream = audioStreams
+                    ?.mapNotNull { it.jsonObject }
+                    ?.filter { it["mimeType"]?.jsonPrimitive?.content?.contains("audio") == true }
+                    ?.maxByOrNull { it["bitrate"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0 }
+                bestStream?.get("url")?.jsonPrimitive?.content
+                    ?: audioStreams?.firstOrNull()?.jsonObject?.get("url")?.jsonPrimitive?.content
+                    ?: ""
+            } else {
+                fallbackStreamExtraction(trackId)
+            }
         } catch (e: Exception) {
             println("[KuhooStream] Piped failed for $trackId: ${e.message}")
-            // Fallback: try alternate Piped instances
-            try {
-                val jsonRes: JsonObject = pipedClient.get("https://watchapi.whatever.social/streams/$trackId").body()
-                jsonRes["audioStreams"]?.jsonArray?.firstOrNull()?.jsonObject?.get("url")?.jsonPrimitive?.content ?: ""
-            } catch (_: Exception) { "" }
+            fallbackStreamExtraction(trackId)
         }
+    }
+
+    private suspend fun fallbackStreamExtraction(trackId: String): String {
+        return try {
+            val response = pipedClient.get("https://watchapi.whatever.social/streams/$trackId")
+            if (response.status.value in 200..299) {
+                val jsonRes: JsonObject = response.body()
+                jsonRes["audioStreams"]?.jsonArray?.firstOrNull()?.jsonObject?.get("url")?.jsonPrimitive?.content ?: ""
+            } else {
+                ""
+            }
+        } catch (_: Exception) { "" }
     }
 
     suspend fun getSearchSuggestions(query: String): List<String> {
