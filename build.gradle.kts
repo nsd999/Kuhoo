@@ -21,8 +21,10 @@ buildscript {
     }
 }
 
-tasks.register<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
+if (tasks.findByName("clean") == null) {
+    tasks.register<Delete>("clean") {
+        delete(rootProject.layout.buildDirectory)
+    }
 }
 
 subprojects {
