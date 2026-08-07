@@ -11,9 +11,7 @@ kotlin {
     jvm("desktop")
 
     @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
-    wasmJs {
-        browser()
-    }
+    wasmJs()
 
     sourceSets {
         commonMain.dependencies {

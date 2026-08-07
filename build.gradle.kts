@@ -18,14 +18,7 @@ buildscript {
     dependencies {
         classpath(libs.gradle)
         classpath(kotlin("gradle-plugin", libs.versions.kotlin.get()))
-    }
-}
 
-if (tasks.findByName("clean") == null) {
-    tasks.register<Delete>("clean") {
-        delete(rootProject.layout.buildDirectory)
-    }
-}
 
 subprojects {
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
