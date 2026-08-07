@@ -17,7 +17,6 @@ import java.net.Inet4Address
 import kotlin.io.encoding.ExperimentalEncodingApi
 import io.ktor.client.*
 import io.ktor.client.call.body
-import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.compression.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -73,7 +72,7 @@ class InnerTube {
     var useLoginForBrowse: Boolean = false
 
     @OptIn(ExperimentalSerializationApi::class)
-    private fun createClient() = HttpClient(OkHttp) {
+    private fun createClient() = HttpClient {
         expectSuccess = true
 
         install(ContentNegotiation) {
