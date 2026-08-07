@@ -130,13 +130,7 @@ class InnerTube {
                 }
                 
                 // Apply proxy authentication
-                this@InnerTube.proxyAuth?.let { auth ->
-                    proxyAuthenticator { _, response ->
-                        response.request.newBuilder()
-                            .header("Proxy-Authorization", auth)
-                            .build()
-                    }
-                }
+                // this@InnerTube.proxyAuth?.let { auth -> ... }
             }
         }
 

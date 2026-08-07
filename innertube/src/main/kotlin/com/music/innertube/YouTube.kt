@@ -1045,7 +1045,7 @@ object YouTube {
                 else -> null
             }
         } catch (e: Exception) {
-            println("Error converting chart item: ${e.message}\n${Json.encodeToString(renderer)}")
+            println("Error converting chart item: ${e.message}\n$renderer")
             null
         }
     }
