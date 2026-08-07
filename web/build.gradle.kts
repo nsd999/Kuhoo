@@ -7,7 +7,6 @@ plugins {
 kotlin {
     @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
     wasmJs {
-        moduleName = "kuhoo-web"
         browser {
             val projectRootDir = project.rootDir
             commonWebpackConfig {

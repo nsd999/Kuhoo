@@ -11,15 +11,7 @@ kotlin {
 
     @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
     wasmJs {
-
-        browser {
-            val projectRootDir = project.rootDir
-            val webpackConfigDir = projectRootDir.resolve("webpack.config.d")
-            commonWebpackConfig {
-                outputFileName = "shared.js"
-            }
-        }
-        binaries.executable()
+        browser()
     }
 
     sourceSets {
