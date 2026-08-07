@@ -58,6 +58,7 @@ sqldelight {
     databases {
         create("KuhooDatabase") {
             packageName.set("com.kuhoo.db")
+            dialect("app.cash.sqldelight:sqlite-3-38-dialect:2.0.2")
         }
     }
 }
