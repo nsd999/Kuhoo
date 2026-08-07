@@ -17,12 +17,12 @@ plugins {
 }
 
 android {
-    namespace = "com.music.vivi"
+    namespace = "com.nsd999.kuhoo"
     compileSdk = 37
     ndkVersion = "27.0.12077973"
 
     defaultConfig {
-        applicationId = "com.vivi.vivimusic"
+        applicationId = "com.nsd999.kuhoo"
         minSdk = 26
         targetSdk = 37
         versionCode = 74
