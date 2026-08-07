@@ -590,6 +590,51 @@ class HomeViewModel @Inject constructor(
                         }
                     )
                 }.onFailure { reportException(it) }
+
+                // Fallback: If YouTube home returns empty sections or fails, fetch Charts and Explore as fallback sections
+                if (homePage.value?.sections.isNullOrEmpty()) {
+                    try {
+                        val exploreRes = YouTube.explore().getOrNull()
+                        val chartsRes = YouTube.getChartsPage().getOrNull()
+                        val fallbackSections = mutableListOf<HomePage.Section>()
+
+                        chartsRes?.sections?.forEach { chartSec ->
+                            val items = chartSec.items.filterExplicit(hideExplicit).filterVideoSongs(hideVideoSongs)
+                            if (items.isNotEmpty()) {
+                                fallbackSections.add(
+                                    HomePage.Section(
+                                        title = chartSec.title,
+                                        label = "Trending Charts",
+                                        thumbnail = null,
+                                        endpoint = null,
+                                        items = items
+                                    )
+                                )
+                            }
+                        }
+
+                        if (exploreRes != null && exploreRes.newReleaseAlbums.isNotEmpty()) {
+                            fallbackSections.add(
+                                HomePage.Section(
+                                    title = "New Releases",
+                                    label = "Fresh Albums & Singles",
+                                    thumbnail = null,
+                                    endpoint = null,
+                                    items = exploreRes.newReleaseAlbums.filterExplicit(hideExplicit)
+                                )
+                            )
+                        }
+
+                        if (fallbackSections.isNotEmpty()) {
+                            homePage.value = HomePage(
+                                chips = homePage.value?.chips,
+                                sections = fallbackSections
+                            )
+                        }
+                    } catch (e: Exception) {
+                        reportException(e)
+                    }
+                }
             }
             launch(Dispatchers.IO) {
                 YouTube.explore().onSuccess { page ->
@@ -611,12 +656,16 @@ class HomeViewModel @Inject constructor(
     private suspend fun load() {
         isLoading.value = true
 
-        // Phase 1: Local DB only — UI renders immediately after this
+        // Phase 1: Local DB only
         loadLocalDataPhase()
-        isLoading.value = false
+        if (allLocalItems.value.isNotEmpty()) {
+            isLoading.value = false
+        }
 
-        // Phase 2: All network sections in parallel — streams in progressively
+        // Phase 2: All network sections in parallel
         loadNetworkDataPhase()
+
+        isLoading.value = false
     }
 
     private val _isLoadingMore = MutableStateFlow(false)

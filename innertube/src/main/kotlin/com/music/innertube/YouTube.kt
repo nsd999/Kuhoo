@@ -715,31 +715,41 @@ object YouTube {
         }
 
         val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_home", params = params).body<BrowseResponse>()
-        val continuation = response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()
-            ?.tabRenderer?.content?.sectionListRenderer?.continuations?.getContinuation()
         val sectionListRender = response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()
             ?.tabRenderer?.content?.sectionListRenderer
-        val sections = sectionListRender?.contents!!
-            .mapNotNull { it.musicCarouselShelfRenderer }
-            .mapNotNull {
-                HomePage.Section.fromMusicCarouselShelfRenderer(it)
+            ?: response.contents?.sectionListRenderer
+            ?: response.contents?.twoColumnBrowseResultsRenderer?.secondaryContents?.sectionListRenderer
+
+        val continuationToken = sectionListRender?.continuations?.getContinuation()
+            ?: response.continuationContents?.sectionListContinuation?.continuations?.getContinuation()
+
+        val sections = sectionListRender?.contents.orEmpty()
+            .mapNotNull { content ->
+                content.musicCarouselShelfRenderer?.let { HomePage.Section.fromMusicCarouselShelfRenderer(it) }
+                    ?: content.musicShelfRenderer?.let { HomePage.Section.fromMusicShelfRenderer(it) }
+                    ?: content.gridRenderer?.let { HomePage.Section.fromGridRenderer(it) }
             }.toMutableList()
-        val chips = sectionListRender.header?.chipCloudRenderer?.chips?.mapNotNull { HomePage.Chip.fromChipCloudChipRenderer(it) }
-        HomePage(chips, sections, continuation)
+
+        val chips = sectionListRender?.header?.chipCloudRenderer?.chips?.mapNotNull { HomePage.Chip.fromChipCloudChipRenderer(it) }
+        HomePage(chips, sections, continuationToken)
     }
 
     private suspend fun homeContinuation(continuation: String): Result<HomePage> = runCatching {
         val response =
             innerTube.browse(WEB_REMIX, continuation = continuation).body<BrowseResponse>()
-        val continuation =
+        val continuationToken =
             response.continuationContents?.sectionListContinuation?.continuations?.getContinuation()
+        val sections = response.continuationContents?.sectionListContinuation?.contents
+            .orEmpty()
+            .mapNotNull { content ->
+                content.musicCarouselShelfRenderer?.let { HomePage.Section.fromMusicCarouselShelfRenderer(it) }
+                    ?: content.musicShelfRenderer?.let { HomePage.Section.fromMusicShelfRenderer(it) }
+                    ?: content.gridRenderer?.let { HomePage.Section.fromGridRenderer(it) }
+            }
         HomePage(
             null,
-            response.continuationContents?.sectionListContinuation?.contents
-            ?.mapNotNull { it.musicCarouselShelfRenderer }
-            ?.mapNotNull {
-                HomePage.Section.fromMusicCarouselShelfRenderer(it)
-            }.orEmpty(), continuation
+            sections,
+            continuationToken
         )
     }
 

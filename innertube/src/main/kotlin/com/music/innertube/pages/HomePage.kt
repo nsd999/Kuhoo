@@ -5,8 +5,10 @@ import com.music.innertube.models.AlbumItem
 import com.music.innertube.models.Artist
 import com.music.innertube.models.ArtistItem
 import com.music.innertube.models.BrowseEndpoint
+import com.music.innertube.models.GridRenderer
 import com.music.innertube.models.MusicCarouselShelfRenderer
 import com.music.innertube.models.MusicResponsiveListItemRenderer
+import com.music.innertube.models.MusicShelfRenderer
 import com.music.innertube.models.MusicTwoRowItemRenderer
 import com.music.innertube.models.PlaylistItem
 import com.music.innertube.models.SectionListRenderer
@@ -66,6 +68,40 @@ data class HomePage(
                     label = renderer.header.musicCarouselShelfBasicHeaderRenderer.strapline?.runs?.firstOrNull()?.text,
                     thumbnail = renderer.header.musicCarouselShelfBasicHeaderRenderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl(),
                     endpoint = renderer.header.musicCarouselShelfBasicHeaderRenderer.moreContentButton?.buttonRenderer?.navigationEndpoint?.browseEndpoint,
+                    items = items
+                )
+            }
+
+            fun fromMusicShelfRenderer(renderer: MusicShelfRenderer): Section? {
+                val title = renderer.title?.runs?.firstOrNull()?.text ?: return null
+                val items = renderer.contents.orEmpty()
+                    .mapNotNull { it.musicResponsiveListItemRenderer }
+                    .mapNotNull { fromMusicResponsiveListItemRenderer(it) }
+
+                if (items.isEmpty()) return null
+
+                return Section(
+                    title = title,
+                    label = null,
+                    thumbnail = null,
+                    endpoint = renderer.bottomEndpoint?.browseEndpoint ?: renderer.moreContentButton?.buttonRenderer?.navigationEndpoint?.browseEndpoint,
+                    items = items
+                )
+            }
+
+            fun fromGridRenderer(renderer: GridRenderer): Section? {
+                val title = renderer.header?.gridHeaderRenderer?.title?.runs?.firstOrNull()?.text ?: return null
+                val items = renderer.items.orEmpty()
+                    .mapNotNull { it.musicTwoRowItemRenderer }
+                    .mapNotNull { fromMusicTwoRowItemRenderer(it) }
+
+                if (items.isEmpty()) return null
+
+                return Section(
+                    title = title,
+                    label = null,
+                    thumbnail = null,
+                    endpoint = null,
                     items = items
                 )
             }
