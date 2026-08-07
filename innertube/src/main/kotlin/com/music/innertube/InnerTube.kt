@@ -89,48 +89,10 @@ class InnerTube {
             deflate(0.8F)
         }
 
-        // Enhanced network configuration for better performance
-        engine {
-            config {
-                // Connection pool settings for better connection reuse
-                connectionPool(
-                    okhttp3.ConnectionPool(
-                        10, // maxIdleConnections
-                        5, // keepAliveDuration
-                        java.util.concurrent.TimeUnit.MINUTES
-                    )
-                )
-                
-                // Timeout configurations
-                connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
-                readTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
-                writeTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
-                
-                // Enable HTTP/2 for better performance
-                protocols(listOf(okhttp3.Protocol.HTTP_2, okhttp3.Protocol.HTTP_1_1))
-                
-                // Retry on connection failure
-                retryOnConnectionFailure(true)
-                
-                // Apply IP version filtering
-                dns(object : Dns {
-                    override fun lookup(hostname: String): List<InetAddress> {
-                        val addresses = Dns.SYSTEM.lookup(hostname)
-                        return when (this@InnerTube.ipVersion) {
-                            IpVersion.IPV4 -> addresses.filter { it is Inet4Address }.ifEmpty { addresses }
-                            IpVersion.IPV6 -> addresses.filter { it is Inet6Address }.ifEmpty { addresses }
-                            IpVersion.AUTO -> addresses
-                        }
-                    }
-                })
-
-                // Apply proxy configuration
-                this@InnerTube.proxy?.let { proxyConfig ->
-                    proxy(proxyConfig)
-                }
-                
-                // Apply proxy authentication
-                // this@InnerTube.proxyAuth?.let { auth -> ... }
+        // Network configuration
+        this@InnerTube.proxy?.let { proxyConfig ->
+            engine {
+                proxy = proxyConfig
             }
         }
 
