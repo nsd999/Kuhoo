@@ -7,18 +7,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.io.BufferedInputStream
-import java.net.URL
-import javax.sound.sampled.AudioFormat
-import javax.sound.sampled.AudioInputStream
-import javax.sound.sampled.AudioSystem
-import javax.sound.sampled.DataLine
-import javax.sound.sampled.FloatControl
-import javax.sound.sampled.SourceDataLine
+import javafx.application.Platform
+import javafx.scene.media.Media
+import javafx.scene.media.MediaPlayer
+import java.net.URI
 
 class DesktopAudioPlayer : AudioPlayer {
-    private val scope = CoroutineScope(Dispatchers.Default + Job())
-
     private val _playbackState = MutableStateFlow(PlaybackState.IDLE)
     override val playbackState: StateFlow<PlaybackState> = _playbackState
 
@@ -34,9 +28,15 @@ class DesktopAudioPlayer : AudioPlayer {
     private val _volume = MutableStateFlow(1.0f)
     override val volume: StateFlow<Float> = _volume
 
-    private var line: SourceDataLine? = null
-    private var playJob: Job? = null
-    private var isPaused = false
+    private var mediaPlayer: MediaPlayer? = null
+
+    init {
+        try {
+            Platform.startup {}
+        } catch (e: IllegalStateException) {
+            // Toolkit already initialized
+        }
+    }
 
     override fun playTrack(track: TrackInfo) {
         stop()
@@ -47,116 +47,78 @@ class DesktopAudioPlayer : AudioPlayer {
         val streamUrl = track.streamUrl ?: return
         _playbackState.value = PlaybackState.BUFFERING
 
-        playJob = scope.launch {
+        Platform.runLater {
             try {
-                val connection = URL(streamUrl).openConnection()
-                connection.setRequestProperty("User-Agent", "Mozilla/5.0")
-                val bufferedIn = BufferedInputStream(connection.getInputStream())
-
-                val rawIn: AudioInputStream = try {
-                    AudioSystem.getAudioInputStream(bufferedIn)
-                } catch (e: Exception) {
-                    _playbackState.value = PlaybackState.ERROR
-                    return@launch
-                }
-
-                val baseFormat = rawIn.format
-                val decodedFormat = AudioFormat(
-                    AudioFormat.Encoding.PCM_SIGNED,
-                    baseFormat.sampleRate,
-                    16,
-                    baseFormat.channels,
-                    baseFormat.channels * 2,
-                    baseFormat.sampleRate,
-                    false
-                )
-
-                val din: AudioInputStream = AudioSystem.getAudioInputStream(decodedFormat, rawIn)
-                val info = DataLine.Info(SourceDataLine::class.java, decodedFormat)
-                val dataLine = AudioSystem.getLine(info) as SourceDataLine
-                dataLine.open(decodedFormat)
-                dataLine.start()
-                line = dataLine
-
-                _playbackState.value = PlaybackState.PLAYING
-
-                val buffer = ByteArray(4096)
-                var bytesRead = 0
-
-                val startTime = System.currentTimeMillis()
-                while (playJob?.isActive == true && din.read(buffer, 0, buffer.size).also { bytesRead = it } != -1) {
-                    if (isPaused) {
-                        dataLine.stop()
-                        while (isPaused && playJob?.isActive == true) {
-                            delay(100)
-                        }
-                        if (playJob?.isActive == true) {
-                            dataLine.start()
-                        }
+                val media = Media(URI(streamUrl).toString())
+                mediaPlayer = MediaPlayer(media).apply {
+                    volume = _volume.value.toDouble()
+                    
+                    setOnReady {
+                        _durationMs.value = media.duration.toMillis().toLong()
+                        play()
                     }
-
-                    if (bytesRead > 0) {
-                        dataLine.write(buffer, 0, bytesRead)
-                        _positionMs.value = dataLine.microsecondPosition / 1000
+                    
+                    setOnPlaying {
+                        _playbackState.value = PlaybackState.PLAYING
                     }
-                }
-
-                dataLine.drain()
-                dataLine.close()
-                din.close()
-
-                if (playJob?.isActive == true) {
-                    _playbackState.value = PlaybackState.COMPLETED
+                    
+                    setOnPaused {
+                        _playbackState.value = PlaybackState.PAUSED
+                    }
+                    
+                    setOnEndOfMedia {
+                        _playbackState.value = PlaybackState.COMPLETED
+                        stop()
+                    }
+                    
+                    setOnError {
+                        println("MediaPlayer Error: ${error.message}")
+                        _playbackState.value = PlaybackState.ERROR
+                    }
+                    
+                    currentTimeProperty().addListener { _, _, newValue ->
+                        _positionMs.value = newValue.toMillis().toLong()
+                    }
                 }
             } catch (e: Exception) {
-                if (_playbackState.value != PlaybackState.IDLE) {
-                    _playbackState.value = PlaybackState.ERROR
-                }
+                println("Media Initialization Error: ${e.message}")
+                _playbackState.value = PlaybackState.ERROR
             }
         }
     }
 
     override fun play() {
-        if (_playbackState.value == PlaybackState.PAUSED) {
-            isPaused = false
-            _playbackState.value = PlaybackState.PLAYING
-        } else if (_currentTrack.value != null && _playbackState.value == PlaybackState.IDLE) {
-            _currentTrack.value?.let { playTrack(it) }
+        Platform.runLater {
+            mediaPlayer?.play()
         }
     }
 
     override fun pause() {
-        if (_playbackState.value == PlaybackState.PLAYING) {
-            isPaused = true
-            _playbackState.value = PlaybackState.PAUSED
+        Platform.runLater {
+            mediaPlayer?.pause()
         }
     }
 
     override fun seekTo(positionMs: Long) {
-        _positionMs.value = positionMs
+        Platform.runLater {
+            mediaPlayer?.seek(javafx.util.Duration(positionMs.toDouble()))
+        }
     }
 
     override fun setVolume(volume: Float) {
         _volume.value = volume.coerceIn(0.0f, 1.0f)
-        line?.let { l ->
-            if (l.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
-                val gainControl = l.getControl(FloatControl.Type.MASTER_GAIN) as FloatControl
-                val min = gainControl.minimum
-                val max = gainControl.maximum
-                val gain = min + (max - min) * _volume.value
-                gainControl.value = gain
-            }
+        Platform.runLater {
+            mediaPlayer?.volume = _volume.value.toDouble()
         }
     }
 
     override fun stop() {
-        isPaused = false
-        playJob?.cancel()
-        playJob = null
-        line?.stop()
-        line?.close()
-        line = null
-        _playbackState.value = PlaybackState.IDLE
+        Platform.runLater {
+            mediaPlayer?.stop()
+            mediaPlayer?.dispose()
+            mediaPlayer = null
+            _playbackState.value = PlaybackState.IDLE
+        }
     }
 
     override fun release() {

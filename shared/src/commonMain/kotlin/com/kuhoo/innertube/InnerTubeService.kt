@@ -95,8 +95,17 @@ class InnerTubeService {
         ensureInitialized()
         return try {
             val result = YouTube.searchSummary(query).getOrNull()
-            result?.summaries
+            val summaries = result?.summaries
                 ?.flatMap { it.items }
+                ?.map { it.toTrackInfo() }
+                ?: emptyList()
+                
+            if (summaries.isNotEmpty()) return summaries
+
+            // Fallback for queries where searchSummary fails
+            val searchResult = YouTube.search(query, SearchFilter.FILTER_SONG).getOrNull()
+            searchResult?.items
+                ?.filterIsInstance<SongItem>()
                 ?.map { it.toTrackInfo() }
                 ?: emptyList()
         } catch (e: Exception) {

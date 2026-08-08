@@ -107,7 +107,8 @@ class MusicRepository(private val database: KuhooDatabase) {
     // =========================================================================
 
     suspend fun getMostPlayed(): List<TrackInfo> = withContext(Dispatchers.Default) {
-        val topIds = database.kuhooDatabaseQueries.getMostPlayedSongIds().executeAsList()
+        val threshold = System.currentTimeMillis() - 48 * 60 * 60 * 1000L // 48 hours ago
+        val topIds = database.kuhooDatabaseQueries.getMostPlayedSongIds(threshold).executeAsList()
         topIds.mapNotNull { id ->
             database.kuhooDatabaseQueries.getSongById(id).executeAsOneOrNull()?.let { song ->
                 TrackInfo(

@@ -135,7 +135,9 @@ INSERT INTO PlayStat (songId, playCount, lastPlayed) VALUES (?, 1, ?)
 ON CONFLICT(songId) DO UPDATE SET playCount = playCount + 1, lastPlayed = excluded.lastPlayed;
 
 getMostPlayedSongIds:
-SELECT songId FROM PlayStat ORDER BY playCount DESC LIMIT 50;
+SELECT songId FROM PlayStat 
+WHERE playCount > 1 AND lastPlayed <= ? 
+ORDER BY playCount DESC LIMIT 50;
 
 getTopArtists:
 SELECT s.artistName, SUM(ps.playCount) AS totalPlays

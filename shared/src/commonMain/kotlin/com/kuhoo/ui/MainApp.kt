@@ -513,7 +513,7 @@ fun HomeScreen(onItemClick: (TrackInfo) -> Unit) {
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(end = 16.dp)
                     ) {
-                        items(recentlyPlayed.take(10)) { track ->
+                        items(recentlyPlayed) { track ->
                             TrackCard(track, onItemClick)
                         }
                     }
@@ -538,7 +538,7 @@ fun HomeScreen(onItemClick: (TrackInfo) -> Unit) {
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(end = 16.dp)
                     ) {
-                        items(section.items.take(10)) { track ->
+                        items(section.items) { track ->
                             TrackCard(track, onItemClick)
                         }
                     }
@@ -781,7 +781,7 @@ fun ExploreScreen(onItemClick: (TrackInfo) -> Unit) {
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(end = 16.dp)
                     ) {
-                        items(section.items.take(10)) { track ->
+                        items(section.items) { track ->
                             TrackCard(track, onItemClick)
                         }
                     }
@@ -1085,6 +1085,22 @@ fun AlbumDetailScreen(browseId: String, onTrackSelect: (TrackInfo) -> Unit, onBa
                     }
                 }
 
+                item {
+                    Spacer(Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        FloatingActionButton(
+                            onClick = { if (album.songs.isNotEmpty()) onTrackSelect(album.songs.first()) },
+                            containerColor = KuhooPurple,
+                            shape = CircleShape
+                        ) {
+                            Icon(Icons.Default.PlayArrow, "Play", tint = SpotifyWhite)
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                }
                 // Song list
                 itemsIndexed(album.songs) { index, track ->
                     Row(
@@ -1166,6 +1182,22 @@ fun PlaylistDetailScreen(playlistId: String, onTrackSelect: (TrackInfo) -> Unit,
                             }
                         }
                     }
+                }
+                item {
+                    Spacer(Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        FloatingActionButton(
+                            onClick = { if (playlist.songs.isNotEmpty()) onTrackSelect(playlist.songs.first()) },
+                            containerColor = KuhooPurple,
+                            shape = CircleShape
+                        ) {
+                            Icon(Icons.Default.PlayArrow, "Play", tint = SpotifyWhite)
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
                 }
                 itemsIndexed(playlist.songs) { index, track ->
                     Row(
