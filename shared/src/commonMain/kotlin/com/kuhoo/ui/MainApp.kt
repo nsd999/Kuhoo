@@ -231,8 +231,8 @@ fun KuhooApp(
                             },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(24.dp),
+                                .heightIn(min = 56.dp),
+                            shape = RoundedCornerShape(28.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = KuhooPurple,

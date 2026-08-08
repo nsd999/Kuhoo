@@ -38,6 +38,9 @@ class DesktopAudioPlayer : AudioPlayer {
         }
     }
 
+    private val scope = CoroutineScope(Dispatchers.IO + Job())
+    private var downloadJob: Job? = null
+
     override fun playTrack(track: TrackInfo) {
         stop()
         _currentTrack.value = track
@@ -47,41 +50,60 @@ class DesktopAudioPlayer : AudioPlayer {
         val streamUrl = track.streamUrl ?: return
         _playbackState.value = PlaybackState.BUFFERING
 
-        Platform.runLater {
+        downloadJob = scope.launch {
             try {
-                val media = Media(URI(streamUrl).toString())
-                mediaPlayer = MediaPlayer(media).apply {
-                    volume = _volume.value.toDouble()
-                    
-                    setOnReady {
-                        _durationMs.value = media.duration.toMillis().toLong()
-                        play()
+                val connection = java.net.URL(streamUrl).openConnection()
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                
+                val tempFile = java.io.File.createTempFile("kuhoo_audio_", ".m4a")
+                tempFile.deleteOnExit()
+
+                connection.getInputStream().use { input ->
+                    tempFile.outputStream().use { output ->
+                        input.copyTo(output)
                     }
-                    
-                    setOnPlaying {
-                        _playbackState.value = PlaybackState.PLAYING
-                    }
-                    
-                    setOnPaused {
-                        _playbackState.value = PlaybackState.PAUSED
-                    }
-                    
-                    setOnEndOfMedia {
-                        _playbackState.value = PlaybackState.COMPLETED
-                        stop()
-                    }
-                    
-                    setOnError {
-                        println("MediaPlayer Error: ${error.message}")
+                }
+
+                Platform.runLater {
+                    try {
+                        val media = Media(tempFile.toURI().toString())
+                        mediaPlayer = MediaPlayer(media).apply {
+                            volume = _volume.value.toDouble()
+                            
+                            setOnReady {
+                                _durationMs.value = media.duration.toMillis().toLong()
+                                play()
+                            }
+                            
+                            setOnPlaying {
+                                _playbackState.value = PlaybackState.PLAYING
+                            }
+                            
+                            setOnPaused {
+                                _playbackState.value = PlaybackState.PAUSED
+                            }
+                            
+                            setOnEndOfMedia {
+                                _playbackState.value = PlaybackState.COMPLETED
+                                stop()
+                            }
+                            
+                            setOnError {
+                                println("MediaPlayer Error: ${error.message}")
+                                _playbackState.value = PlaybackState.ERROR
+                            }
+                            
+                            currentTimeProperty().addListener { _, _, newValue ->
+                                _positionMs.value = newValue.toMillis().toLong()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        println("Media Initialization Error: ${e.message}")
                         _playbackState.value = PlaybackState.ERROR
-                    }
-                    
-                    currentTimeProperty().addListener { _, _, newValue ->
-                        _positionMs.value = newValue.toMillis().toLong()
                     }
                 }
             } catch (e: Exception) {
-                println("Media Initialization Error: ${e.message}")
+                println("Download Error: ${e.message}")
                 _playbackState.value = PlaybackState.ERROR
             }
         }
